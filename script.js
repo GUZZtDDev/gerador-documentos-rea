@@ -9,14 +9,52 @@ function showMessage(text, type) {
 }
 
 function formatKey(key) {
-    return key
+    const translations = {
+    nrea: "NREA",
+
+    // Empresa
+    founders: "Fundadores",
+    created_at: "Data de Criação",
+    trade_name: "Nome Fantasia",
+    business_name: "Razão Social",
+    initial_capital: "Capital Inicial",
+    economic_activity: "Atividade Econômica",
+    situacao_cadastral: "Situação Cadastral",
+
+    // Funcionário
+    hired_at: "Data de Contratação",
+    position: "Cargo",
+    company_name: "Empresa",
+    employee_name: "Funcionário",
+    admission_date: "Data de Admissão",
+
+    // Protocolos
+    protocol_number: "Número do Protocolo",
+    protocol_id: "ID do Protocolo",
+
+    // Outros
+    service_type: "Serviço",
+    document_type: "Tipo de Documento",
+    doc_id: "ID do Documento",
+    checksum: "Código de Verificação"
+};
+
+    return translations[key] || key
         .replaceAll("_", " ")
         .replace(/\b\w/g, letter => letter.toUpperCase());
 }
 
-function formatValue(value) {
+function formatValue(value, key = "") {
     if (value === null || value === undefined) {
         return "-";
+    }
+
+    if (
+        typeof value === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+        const [year, month, day] = value.split("-");
+        return `${day}/${month}/${year}`;
     }
 
     if (typeof value === "object") {
@@ -124,7 +162,7 @@ function readDocument() {
                 document.createElement("div");
 
             valueElement.className = "data-value";
-            valueElement.textContent = formatValue(value);
+            valueElement.textContent = formatValue(value, key);
 
             item.appendChild(keyElement);
             item.appendChild(valueElement);

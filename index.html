@@ -3,87 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Gerador de Documentos REA</title>
-
+    <title>Gerador de Documentos | REA</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<main class="container">
+<header>
+    <div class="logo">REA</div>
+    <div>
+        <h1>Gerador de Documentos</h1>
+        <p>Registro Empresarial Abinadólar</p>
+    </div>
+</header>
 
-    <header class="header">
-        <h1>Gerador de Documentos REA</h1>
-        <p>Preparação e visualização de documentos</p>
-    </header>
+<main>
 
     <section class="card">
-
-        <label for="jsonInput">
-            Pacote JSON
-        </label>
+        <h2>Preparar documento</h2>
+        <p class="description">
+            Cole abaixo o pacote JSON fornecido pelo REA.
+        </p>
 
         <textarea
             id="jsonInput"
-            placeholder="Cole aqui o pacote JSON copiado do REA..."
+            placeholder="Cole o JSON do documento aqui..."
             spellcheck="false"
         ></textarea>
 
-        <button id="readButton">
-            Ler documento
+        <button id="generateButton">
+            Gerar documento
         </button>
 
-        <div id="message"></div>
-
+        <div id="status"></div>
     </section>
 
-
-    <section id="result" class="card hidden">
-
+    <section id="documentInfo" class="card hidden">
         <h2>Documento identificado</h2>
 
         <div class="info-grid">
-
-            <div class="info">
-                <span>ID do Documento</span>
-                <strong id="docId">-</strong>
+            <div>
+                <span>Tipo</span>
+                <strong id="infoType">-</strong>
             </div>
 
-            <div class="info">
-                <span>Número do Protocolo</span>
-                <strong id="protocolNumber">-</strong>
+            <div>
+                <span>PEA</span>
+                <strong id="infoProtocol">-</strong>
             </div>
 
-            <div class="info">
+            <div>
                 <span>Serviço</span>
-                <strong id="serviceType">-</strong>
+                <strong id="infoService">-</strong>
             </div>
 
-            <div class="info">
-                <span>Tipo de Documento</span>
-                <strong id="documentType">-</strong>
+            <div>
+                <span>NREA</span>
+                <strong id="infoNrea">-</strong>
             </div>
-
-            <div class="info">
-                <span>ID do Protocolo</span>
-                <strong id="protocolId">-</strong>
-            </div>
-
-            <div class="info">
-                <span>Código de Verificação</span>
-                <strong id="checksum">-</strong>
-            </div>
-
         </div>
-
-        <h2>Pré-visualização</h2>
-
-        <div id="documentPreview"></div>
-
     </section>
 
 </main>
+
+<footer>
+    REA • Registro Empresarial Abinadólar
+</footer>
+
+<script src="https://unpkg.com/pizzip/dist/pizzip.min.js"></script>
+<script src="https://unpkg.com/docxtemplater/build/docxtemplater.js"></script>
 
 <script src="script.js"></script>
 

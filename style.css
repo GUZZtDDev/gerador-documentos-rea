@@ -4,102 +4,119 @@
 
 body {
     margin: 0;
+    min-height: 100vh;
     font-family: Arial, Helvetica, sans-serif;
-    background: #f3f4f6;
-    color: #111827;
+    background: #f4f6f8;
+    color: #1f2937;
 }
 
-.container {
-    width: min(100% - 32px, 1000px);
-    margin: 40px auto;
+header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.header {
-    margin-bottom: 24px;
+.logo {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: #111827;
+    color: white;
+    font-weight: bold;
 }
 
-.header h1 {
-    margin: 0 0 8px;
-    font-size: 30px;
-}
-
-.header p {
+header h1 {
     margin: 0;
+    font-size: 22px;
+}
+
+header p {
+    margin: 4px 0 0;
     color: #6b7280;
+    font-size: 14px;
+}
+
+main {
+    width: min(900px, calc(100% - 30px));
+    margin: 30px auto;
 }
 
 .card {
-    background: #ffffff;
+    background: white;
     border-radius: 14px;
     padding: 24px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
-label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 10px;
+.card h2 {
+    margin-top: 0;
+}
+
+.description {
+    color: #6b7280;
 }
 
 textarea {
     width: 100%;
-    min-height: 220px;
+    min-height: 300px;
     resize: vertical;
-    padding: 14px;
-
+    padding: 15px;
     border: 1px solid #d1d5db;
     border-radius: 10px;
-
     font-family: monospace;
-    font-size: 14px;
-
+    font-size: 13px;
     outline: none;
 }
 
 textarea:focus {
-    border-color: #2563eb;
+    border-color: #111827;
 }
 
 button {
-    margin-top: 14px;
-
     width: 100%;
+    margin-top: 15px;
     padding: 14px;
-
-    border: none;
+    border: 0;
     border-radius: 10px;
-
-    background: #2563eb;
+    background: #111827;
     color: white;
-
-    font-size: 16px;
+    font-size: 15px;
     font-weight: bold;
-
     cursor: pointer;
 }
 
 button:hover {
-    background: #1d4ed8;
+    opacity: 0.9;
 }
 
-#message {
-    margin-top: 14px;
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#status {
+    margin-top: 15px;
     padding: 12px;
     border-radius: 8px;
-
     display: none;
 }
 
-#message.success {
+#status.success {
     display: block;
-    background: #dcfce7;
-    color: #166534;
+    background: #ecfdf5;
+    color: #065f46;
 }
 
-#message.error {
+#status.error {
     display: block;
-    background: #fee2e2;
+    background: #fef2f2;
     color: #991b1b;
 }
 
@@ -107,125 +124,42 @@ button:hover {
     display: none;
 }
 
-h2 {
-    margin-top: 0;
-    margin-bottom: 18px;
-}
-
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
-
-    margin-bottom: 28px;
+    gap: 15px;
 }
 
-.info {
-    padding: 14px;
-
+.info-grid div {
+    padding: 15px;
     background: #f9fafb;
     border-radius: 10px;
-
-    overflow: hidden;
 }
 
-.info span {
+.info-grid span {
     display: block;
-
-    margin-bottom: 6px;
-
-    font-size: 13px;
+    font-size: 12px;
     color: #6b7280;
+    margin-bottom: 5px;
 }
 
-.info strong {
-    display: block;
+.info-grid strong {
     word-break: break-word;
 }
 
-
-/* DOCUMENTO */
-
-.document {
-    background: white;
-
-    border: 1px solid #d1d5db;
-
-    padding: 60px;
-
-    min-height: 700px;
-
-    line-height: 1.6;
-}
-
-.document-header {
+footer {
     text-align: center;
-    margin-bottom: 45px;
-}
-
-.document-header h3 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.document-header p {
-    margin: 5px 0;
-    font-size: 14px;
-}
-
-.document-title {
-    text-align: center;
-
-    margin: 40px 0;
-
-    font-size: 22px;
-    font-weight: bold;
-    text-transform: uppercase;
-}
-
-.document-info {
-    margin-bottom: 30px;
-}
-
-.document-info p {
-    margin: 8px 0;
-}
-
-.document-signature {
-    margin-top: 100px;
-
-    text-align: center;
-}
-
-.signature-line {
-    width: 280px;
-
-    margin: 0 auto 8px;
-
-    border-top: 1px solid #111827;
+    padding: 30px;
+    color: #6b7280;
+    font-size: 13px;
 }
 
 @media (max-width: 600px) {
-
-    .container {
-        width: min(100% - 20px, 1000px);
-        margin: 20px auto;
-    }
-
-    .card {
-        padding: 18px;
-    }
-
-    .header h1 {
-        font-size: 24px;
-    }
-
     .info-grid {
         grid-template-columns: 1fr;
     }
 
-    .document {
-        padding: 30px 20px;
-        min-height: 600px;
+    .card {
+        padding: 18px;
     }
 }

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Documentos REA</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <main class="container">
+
+        <header>
+            <h1>Gerador de Documentos REA</h1>
+            <p>Leitor de pacotes de documentos</p>
+        </header>
+
+        <section class="card">
+            <label for="jsonInput">Pacote JSON</label>
+
+            <textarea
+                id="jsonInput"
+                placeholder="Cole aqui o pacote JSON copiado do REA..."
+                spellcheck="false"
+            ></textarea>
+
+            <button id="readButton">
+                Ler documento
+            </button>
+
+            <div id="message"></div>
+        </section>
+
+        <section id="result" class="card hidden">
+
+            <h2>Documento identificado</h2>
+
+            <div class="info-grid">
+
+                <div class="info">
+                    <span>ID do documento</span>
+                    <strong id="docId">-</strong>
+                </div>
+
+                <div class="info">
+                    <span>Protocolo</span>
+                    <strong id="protocolNumber">-</strong>
+                </div>
+
+                <div class="info">
+                    <span>Serviço</span>
+                    <strong id="serviceType">-</strong>
+                </div>
+
+                <div class="info">
+                    <span>Tipo de documento</span>
+                    <strong id="documentType">-</strong>
+                </div>
+
+                <div class="info">
+                    <span>ID do protocolo</span>
+                    <strong id="protocolId">-</strong>
+                </div>
+
+                <div class="info">
+                    <span>Checksum</span>
+                    <strong id="checksum">-</strong>
+                </div>
+
+            </div>
+
+            <h2>Dados do documento</h2>
+
+            <div id="contentData" class="data-list"></div>
+
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

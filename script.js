@@ -386,13 +386,17 @@ async function generateDocx(pkg) {
 
     if (!response.ok) {
         throw new Error(
-            `Modelo DOCX não encontrado. HTTP ${response.status}: ${model.file}`
+            `Modelo DOCX não encontrado. HTTP ${response.status}`
         );
     }
 
     const arrayBuffer = await response.arrayBuffer();
 
-    console.log("Modelo carregado:", arrayBuffer.byteLength, "bytes");
+    console.log(
+        "Modelo carregado:",
+        arrayBuffer.byteLength,
+        "bytes"
+    );
 
     let zip;
 
@@ -406,34 +410,48 @@ async function generateDocx(pkg) {
         );
     }
 
+    // IMPORTANTE:
+    // O template usa [[CAMPO]]
     const doc = new window.docxtemplater(zip, {
         paragraphLoop: true,
-        linebreaks: true
+        linebreaks: true,
+        delimiters: {
+            start: "[[",
+            end: "]]"
+        }
     });
 
+    // Aqui declaramos fields ANTES de utilizá-lo
     let fields;
 
     switch (pkg.document_type) {
+
         case "documento_criacao_empresa":
             fields = buildCompanyData(pkg);
             break;
 
         default:
             throw new Error(
-                "Modelo ainda não implementado."
+                `Modelo ainda não implementado: ${pkg.document_type}`
             );
     }
 
-    console.log("Campos enviados para o modelo:", fields);
+    console.log(
+        "Campos enviados para o modelo:",
+        fields
+    );
 
     try {
         doc.render(fields);
     } catch (error) {
-        console.error("ERRO AO PREENCHER DOCX:", error);
+        console.error(
+            "ERRO AO PREENCHER DOCX:",
+            error
+        );
 
         throw new Error(
-            "Não foi possível preencher o modelo. " +
-            "Verifique os marcadores {{...}} no DOCX."
+            "Não foi possível preencher o modelo DOCX. " +
+            "Verifique os marcadores [[...]] no arquivo."
         );
     }
 
@@ -442,6 +460,12 @@ async function generateDocx(pkg) {
         mimeType:
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     });
+
+    console.log(
+        "Documento gerado:",
+        blob.size,
+        "bytes"
+    );
 
     downloadBlob(
         blob,

@@ -14,22 +14,22 @@ body {
     margin: 40px auto;
 }
 
-header {
+.header {
     margin-bottom: 24px;
 }
 
-header h1 {
+.header h1 {
     margin: 0 0 8px;
     font-size: 30px;
 }
 
-header p {
+.header p {
     margin: 0;
     color: #6b7280;
 }
 
 .card {
-    background: white;
+    background: #ffffff;
     border-radius: 14px;
     padding: 24px;
     margin-bottom: 20px;
@@ -47,10 +47,13 @@ textarea {
     min-height: 220px;
     resize: vertical;
     padding: 14px;
+
     border: 1px solid #d1d5db;
     border-radius: 10px;
+
     font-family: monospace;
     font-size: 14px;
+
     outline: none;
 }
 
@@ -60,15 +63,20 @@ textarea:focus {
 
 button {
     margin-top: 14px;
+
     width: 100%;
+    padding: 14px;
+
     border: none;
     border-radius: 10px;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
+
     background: #2563eb;
     color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
 }
 
 button:hover {
@@ -79,6 +87,7 @@ button:hover {
     margin-top: 14px;
     padding: 12px;
     border-radius: 8px;
+
     display: none;
 }
 
@@ -107,21 +116,26 @@ h2 {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
+
     margin-bottom: 28px;
 }
 
 .info {
     padding: 14px;
+
     background: #f9fafb;
     border-radius: 10px;
+
     overflow: hidden;
 }
 
 .info span {
     display: block;
+
+    margin-bottom: 6px;
+
     font-size: 13px;
     color: #6b7280;
-    margin-bottom: 6px;
 }
 
 .info strong {
@@ -129,26 +143,66 @@ h2 {
     word-break: break-word;
 }
 
-.data-list {
-    display: grid;
-    gap: 10px;
+
+/* DOCUMENTO */
+
+.document {
+    background: white;
+
+    border: 1px solid #d1d5db;
+
+    padding: 60px;
+
+    min-height: 700px;
+
+    line-height: 1.6;
 }
 
-.data-item {
-    padding: 14px;
-    background: #f9fafb;
-    border-radius: 10px;
+.document-header {
+    text-align: center;
+    margin-bottom: 45px;
 }
 
-.data-key {
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 5px;
+.document-header h3 {
+    margin: 0;
+    font-size: 20px;
 }
 
-.data-value {
+.document-header p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.document-title {
+    text-align: center;
+
+    margin: 40px 0;
+
+    font-size: 22px;
     font-weight: bold;
-    word-break: break-word;
+    text-transform: uppercase;
+}
+
+.document-info {
+    margin-bottom: 30px;
+}
+
+.document-info p {
+    margin: 8px 0;
+}
+
+.document-signature {
+    margin-top: 100px;
+
+    text-align: center;
+}
+
+.signature-line {
+    width: 280px;
+
+    margin: 0 auto 8px;
+
+    border-top: 1px solid #111827;
 }
 
 @media (max-width: 600px) {
@@ -162,11 +216,16 @@ h2 {
         padding: 18px;
     }
 
-    header h1 {
+    .header h1 {
         font-size: 24px;
     }
 
     .info-grid {
         grid-template-columns: 1fr;
+    }
+
+    .document {
+        padding: 30px 20px;
+        min-height: 600px;
     }
 }

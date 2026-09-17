@@ -3,80 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Gerador de Documentos REA</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <main class="container">
+<main class="container">
 
-        <header>
-            <h1>Gerador de Documentos REA</h1>
-            <p>Leitor de pacotes de documentos</p>
-        </header>
+    <header class="header">
+        <h1>Gerador de Documentos REA</h1>
+        <p>Preparação e visualização de documentos</p>
+    </header>
 
-        <section class="card">
-            <label for="jsonInput">Pacote JSON</label>
+    <section class="card">
 
-            <textarea
-                id="jsonInput"
-                placeholder="Cole aqui o pacote JSON copiado do REA..."
-                spellcheck="false"
-            ></textarea>
+        <label for="jsonInput">
+            Pacote JSON
+        </label>
 
-            <button id="readButton">
-                Ler documento
-            </button>
+        <textarea
+            id="jsonInput"
+            placeholder="Cole aqui o pacote JSON copiado do REA..."
+            spellcheck="false"
+        ></textarea>
 
-            <div id="message"></div>
-        </section>
+        <button id="readButton">
+            Ler documento
+        </button>
 
-        <section id="result" class="card hidden">
+        <div id="message"></div>
 
-            <h2>Documento identificado</h2>
+    </section>
 
-            <div class="info-grid">
 
-                <div class="info">
-                    <span>ID do documento</span>
-                    <strong id="docId">-</strong>
-                </div>
+    <section id="result" class="card hidden">
 
-                <div class="info">
-                    <span>Protocolo</span>
-                    <strong id="protocolNumber">-</strong>
-                </div>
+        <h2>Documento identificado</h2>
 
-                <div class="info">
-                    <span>Serviço</span>
-                    <strong id="serviceType">-</strong>
-                </div>
+        <div class="info-grid">
 
-                <div class="info">
-                    <span>Tipo de documento</span>
-                    <strong id="documentType">-</strong>
-                </div>
-
-                <div class="info">
-                    <span>ID do protocolo</span>
-                    <strong id="protocolId">-</strong>
-                </div>
-
-                <div class="info">
-                    <span>Checksum</span>
-                    <strong id="checksum">-</strong>
-                </div>
-
+            <div class="info">
+                <span>ID do Documento</span>
+                <strong id="docId">-</strong>
             </div>
 
-            <h2>Dados do documento</h2>
+            <div class="info">
+                <span>Número do Protocolo</span>
+                <strong id="protocolNumber">-</strong>
+            </div>
 
-            <div id="contentData" class="data-list"></div>
+            <div class="info">
+                <span>Serviço</span>
+                <strong id="serviceType">-</strong>
+            </div>
 
-        </section>
+            <div class="info">
+                <span>Tipo de Documento</span>
+                <strong id="documentType">-</strong>
+            </div>
 
-    </main>
+            <div class="info">
+                <span>ID do Protocolo</span>
+                <strong id="protocolId">-</strong>
+            </div>
 
-    <script src="script.js"></script>
+            <div class="info">
+                <span>Código de Verificação</span>
+                <strong id="checksum">-</strong>
+            </div>
+
+        </div>
+
+        <h2>Pré-visualização</h2>
+
+        <div id="documentPreview"></div>
+
+    </section>
+
+</main>
+
+<script src="script.js"></script>
+
 </body>
 </html>

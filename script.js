@@ -11,7 +11,7 @@
 // Substitua pela URL real da sua Edge Function quando estiver
 // configurando a comunicação definitiva.
 const API_URL =
-    "https://SEU-PROJETO.supabase.co/functions/v1/get-document-data";
+    "https://mmxbckoewggaxyupieup.supabase.co/functions/v1/get-document-data";
 
 
 // ============================================================

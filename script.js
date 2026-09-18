@@ -2,8 +2,14 @@
 // GERADOR DE DOCUMENTOS REA
 // ============================================================
 
-// URL da API do REA
-// Coloque aqui a URL real quando for configurar a API.
+
+// ============================================================
+// CONFIGURAÇÃO
+// ============================================================
+
+// URL da API do REA.
+// Substitua pela URL real da sua Edge Function quando estiver
+// configurando a comunicação definitiva.
 const API_URL =
     "https://SEU-PROJETO.supabase.co/functions/v1/get-document-data";
 
@@ -13,16 +19,43 @@ const API_URL =
 // ============================================================
 
 const documentModels = {
+
     documento_criacao_empresa: {
-        file: "modelos/criacao-empresa.docx",
-        name: "Criação de Empresa",
-        outputName: "documento-criacao-empresa.docx"
+
+        file:
+            "modelos/criacao-empresa.docx",
+
+        name:
+            "Criação de Empresa",
+
+        outputName:
+            "documento-criacao-empresa.docx"
     },
 
+
     documento_admissao_funcionario: {
-        file: "modelos/admissao-funcionario.docx",
-        name: "Admissão de Funcionário",
-        outputName: "documento-admissao-funcionario.docx"
+
+        file:
+            "modelos/admissao-funcionario.docx",
+
+        name:
+            "Admissão de Funcionário",
+
+        outputName:
+            "documento-admissao-funcionario.docx"
+    },
+
+
+    documento_desligamento_funcionario: {
+
+        file:
+            "modelos/desligamento-funcionario.docx",
+
+        name:
+            "Desligamento de Funcionário",
+
+        outputName:
+            "documento-desligamento-funcionario.docx"
     }
 };
 
@@ -51,10 +84,17 @@ const resultElement =
 // STATUS
 // ============================================================
 
-function setStatus(message, type = "info") {
-    if (!statusElement) return;
+function setStatus(
+    message,
+    type = "info"
+) {
 
-    statusElement.textContent = message;
+    if (!statusElement) {
+        return;
+    }
+
+    statusElement.textContent =
+        message;
 
     statusElement.className =
         `status ${type}`;
@@ -66,43 +106,83 @@ function setStatus(message, type = "info") {
 // ============================================================
 
 function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
     return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 
 // ============================================================
-// FORMATAR DATA
+// DATA
 // ============================================================
 
 function formatDate(value) {
+
     if (!value) {
         return "";
     }
 
-    try {
-        const date = new Date(value);
+    const text =
+        String(value);
 
-        if (Number.isNaN(date.getTime())) {
-            return String(value);
-        }
+    // YYYY-MM-DD
+    if (
+        /^\d{4}-\d{2}-\d{2}$/.test(text)
+    ) {
 
-        return date.toLocaleDateString("pt-BR");
-    } catch {
-        return String(value);
+        const [
+            year,
+            month,
+            day
+        ] =
+            text.split("-");
+
+        return `${day}/${month}/${year}`;
     }
+
+
+    // ISO
+    if (
+        text.includes("T")
+    ) {
+
+        const date =
+            new Date(text);
+
+        if (
+            !Number.isNaN(
+                date.getTime()
+            )
+        ) {
+
+            return date.toLocaleDateString(
+                "pt-BR"
+            );
+        }
+    }
+
+
+    return text;
 }
 
 
 // ============================================================
-// FORMATAR MOEDA
+// MOEDA
 // ============================================================
 
 function formatCurrency(value) {
+
     if (
         value === null ||
         value === undefined ||
@@ -111,31 +191,136 @@ function formatCurrency(value) {
         return "";
     }
 
-    const number = Number(value);
+    const number =
+        Number(value);
 
-    if (Number.isNaN(number)) {
+    if (
+        Number.isNaN(number)
+    ) {
         return String(value);
     }
 
-    return `${number.toLocaleString("pt-BR")} AbinaDólares`;
+    return number.toLocaleString(
+        "pt-BR",
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    );
 }
 
 
 // ============================================================
-// CAPITALIZAR
+// CAPITALIZAÇÃO
 // ============================================================
 
 function capitalize(value) {
+
     if (!value) {
         return "";
     }
 
-    const text = String(value);
+    return String(value)
+        .charAt(0)
+        .toUpperCase()
+        +
+        String(value)
+            .slice(1);
+}
 
-    return (
-        text.charAt(0).toUpperCase() +
-        text.slice(1)
-    );
+
+// ============================================================
+// LIMPAR NOME DE ARQUIVO
+// ============================================================
+
+function sanitizeFileName(value) {
+
+    if (!value) {
+        return "";
+    }
+
+    return String(value)
+
+        // caracteres proibidos
+        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+
+        // espaços repetidos
+        .replace(/\s+/g, " ")
+
+        // remove espaços no começo/fim
+        .trim()
+
+        // evita ponto/espaço no final
+        .replace(/[. ]+$/, "");
+}
+
+
+// ============================================================
+// NOME DO ARQUIVO
+// ============================================================
+
+function getOutputFileName(
+    pkg
+) {
+
+    const data =
+        pkg.content_data ||
+        {};
+
+    const pea =
+        pkg.protocol_number ||
+        "SEM-PEA";
+
+
+    switch (
+        pkg.document_type
+    ) {
+
+        case "documento_criacao_empresa": {
+
+            const companyName =
+                data.business_name ||
+                data.company_name ||
+                data.trade_name ||
+                "Empresa";
+
+            return sanitizeFileName(
+                `Criação de Empresa - ${companyName} - ${pea}.docx`
+            );
+        }
+
+
+        case "documento_admissao_funcionario": {
+
+            const employeeName =
+                data.employee_name ||
+                "Funcionário";
+
+            return sanitizeFileName(
+                `Contratação de Funcionário - ${employeeName} - ${pea}.docx`
+            );
+        }
+
+
+        case "documento_desligamento_funcionario": {
+
+            const employeeName =
+                data.employee_name ||
+                "Funcionário";
+
+            return sanitizeFileName(
+                `Desligamento de Funcionário - ${employeeName} - ${pea}.docx`
+            );
+        }
+
+
+        default: {
+
+            return sanitizeFileName(
+                `Documento REA - ${pea}.docx`
+            );
+        }
+    }
 }
 
 
@@ -143,122 +328,139 @@ function capitalize(value) {
 // CRIAÇÃO DE EMPRESA
 // ============================================================
 
-function formatFounders(founders) {
-    if (
-        !Array.isArray(founders) ||
-        founders.length === 0
-    ) {
-        return "";
-    }
+function buildCompanyData(
+    pkg
+) {
 
-    return founders
-        .map(founder =>
-            founder?.full_name || ""
-        )
-        .filter(Boolean)
-        .join("\n");
-}
-
-
-function formatParticipation(founders) {
-    if (
-        !Array.isArray(founders) ||
-        founders.length === 0
-    ) {
-        return "";
-    }
-
-    return founders
-        .map(founder => {
-
-            if (!founder) {
-                return "";
-            }
-
-            const name =
-                founder.full_name || "";
-
-            const percentage =
-                founder.ownership_percentage;
-
-            if (!name) {
-                return "";
-            }
-
-            if (
-                percentage === undefined ||
-                percentage === null ||
-                percentage === ""
-            ) {
-                return name;
-            }
-
-            return `${name} - ${percentage}%`;
-        })
-        .filter(Boolean)
-        .join("\n");
-}
-
-
-function buildCompanyData(pkg) {
     const data =
-        pkg.content_data || {};
+        pkg.content_data ||
+        {};
+
+
+    const founders =
+        Array.isArray(
+            data.founders
+        )
+            ? data.founders
+            : [];
+
+
+    const founderNames =
+        founders
+            .map(
+                founder =>
+                    founder.full_name ||
+                    founder.name ||
+                    ""
+            )
+            .filter(Boolean);
+
+
+    const founderOwnership =
+        founders
+            .map(
+                founder => {
+
+                    if (
+                        founder.ownership_percentage ===
+                        null ||
+                        founder.ownership_percentage ===
+                        undefined
+                    ) {
+                        return "";
+                    }
+
+                    return `${founder.full_name || ""} - ${founder.ownership_percentage}%`;
+                }
+            )
+            .filter(Boolean);
+
 
     return {
 
         PEA_DO_ATO:
-            pkg.protocol_number || "",
+            pkg.protocol_number ||
+            "",
+
 
         SERVICO:
-            pkg.service_type || "",
+            pkg.service_type ||
+            "",
+
 
         FUNCIONARIO:
             "",
+
 
         DATA:
             formatDate(
                 data.created_at
             ),
 
+
         NREA:
-            data.nrea || "",
+            data.nrea ||
+            "",
+
 
         NOME_EMPRESA:
-            data.business_name || "",
+            data.business_name ||
+            "",
+
+
+        EMPRESA:
+            data.business_name ||
+            "",
+
 
         NOME_FANTASIA:
-            data.trade_name || "",
+            data.trade_name ||
+            "",
+
 
         ATIVIDADE_ECONOMICA:
-            data.economic_activity || "",
+            data.economic_activity ||
+            "",
+
 
         DATA_CRIACAO:
             formatDate(
                 data.created_at
             ),
 
+
         FUNDADORES:
-            formatFounders(
-                data.founders
+            founderNames.join(
+                ", "
             ),
+
 
         SOCIOS:
-            "",
-
-        PARTICIPACAO:
-            formatParticipation(
-                data.founders
+            founderNames.join(
+                ", "
             ),
+
+
+        PARTICIPACAO_SOCIETARIA:
+            founderOwnership.join(
+                "; "
+            ),
+
 
         CAPITAL_INICIAL:
             formatCurrency(
                 data.initial_capital
             ),
 
+
         SITUACAO:
-            capitalize(
-                data.situacao_cadastral
-            )
+            data.situacao_cadastral ||
+            "",
+
+
+        SITUACAO_CADASTRAL:
+            data.situacao_cadastral ||
+            ""
     };
 }
 
@@ -267,20 +469,30 @@ function buildCompanyData(pkg) {
 // ADMISSÃO DE FUNCIONÁRIO
 // ============================================================
 
-function buildAdmissionData(pkg) {
+function buildAdmissionData(
+    pkg
+) {
+
     const data =
-        pkg.content_data || {};
+        pkg.content_data ||
+        {};
+
 
     return {
 
         PEA_DO_ATO:
-            pkg.protocol_number || "",
+            pkg.protocol_number ||
+            "",
+
 
         SERVICO:
-            pkg.service_type || "",
+            pkg.service_type ||
+            "",
+
 
         FUNCIONARIO:
             "",
+
 
         DATA:
             formatDate(
@@ -288,22 +500,87 @@ function buildAdmissionData(pkg) {
                 data.hired_at
             ),
 
+
         NREA:
-            data.nrea || "",
+            data.nrea ||
+            "",
+
 
         EMPRESA:
-            data.company_name || "",
+            data.company_name ||
+            "",
+
 
         // O modelo oficial possui
-        // [[CARGO]] nesse campo.
+        // [[CARGO]] neste campo.
+        // Conforme definido no projeto,
+        // ele recebe data.position.
         CARGO:
-            data.position || "",
+            data.position ||
+            "",
+
 
         DATA_ADMISSAO:
             formatDate(
                 data.admission_date ||
                 data.hired_at
             )
+    };
+}
+
+
+// ============================================================
+// DESLIGAMENTO DE FUNCIONÁRIO
+// ============================================================
+
+function buildTerminationData(
+    pkg
+) {
+
+    const data =
+        pkg.content_data ||
+        {};
+
+
+    return {
+
+        PEA_DO_ATO:
+            pkg.protocol_number ||
+            "",
+
+
+        SERVICO:
+            pkg.service_type ||
+            "",
+
+
+        FUNCIONARIO:
+            "",
+
+
+        DATA:
+            formatDate(
+                data.termination_date ||
+                data.dismissal_date ||
+                data.terminated_at ||
+                data.termination_at ||
+                data.dismissed_at
+            ),
+
+
+        NREA:
+            data.nrea ||
+            "",
+
+
+        EMPRESA:
+            data.company_name ||
+            "",
+
+
+        FUNCIONARIO_AFETADO:
+            data.employee_name ||
+            ""
     };
 }
 
@@ -317,8 +594,78 @@ const documentFieldBuilders = {
     documento_criacao_empresa:
         buildCompanyData,
 
+
     documento_admissao_funcionario:
-        buildAdmissionData
+        buildAdmissionData,
+
+
+    documento_desligamento_funcionario:
+        buildTerminationData
+};
+
+
+// ============================================================
+// TRADUÇÃO DOS CAMPOS
+// ============================================================
+
+const fieldTranslations = {
+
+    nrea:
+        "NREA",
+
+    hired_at:
+        "Data de Contratação",
+
+    position:
+        "Cargo",
+
+    company_name:
+        "Empresa",
+
+    employee_name:
+        "Funcionário",
+
+    admission_date:
+        "Data de Admissão",
+
+    termination_date:
+        "Data de Desligamento",
+
+    dismissal_date:
+        "Data de Desligamento",
+
+    terminated_at:
+        "Data de Desligamento",
+
+    termination_at:
+        "Data de Desligamento",
+
+    dismissed_at:
+        "Data de Desligamento",
+
+    business_name:
+        "Razão Social",
+
+    trade_name:
+        "Nome Fantasia",
+
+    created_at:
+        "Data de Criação",
+
+    initial_capital:
+        "Capital Inicial",
+
+    economic_activity:
+        "Atividade Econômica",
+
+    situacao_cadastral:
+        "Situação Cadastral",
+
+    founders:
+        "Fundadores",
+
+    employee_cpf:
+        "CPF"
 };
 
 
@@ -326,9 +673,12 @@ const documentFieldBuilders = {
 // VALIDAR PACOTE
 // ============================================================
 
-function validatePackage(pkg) {
+function validatePackage(
+    pkg
+) {
 
     if (!pkg) {
+
         throw new Error(
             "Pacote vazio."
         );
@@ -336,23 +686,35 @@ function validatePackage(pkg) {
 
 
     const requiredFields = [
+
         "doc_id",
+
         "protocol_id",
+
         "document_type",
+
         "protocol_number",
+
         "service_type",
+
         "content_data",
+
         "checksum"
     ];
 
 
     for (
-        const field of requiredFields
+        const field
+        of requiredFields
     ) {
 
         if (
-            pkg[field] === undefined ||
-            pkg[field] === null
+            pkg[field] ===
+            undefined ||
+            pkg[field] ===
+            null ||
+            pkg[field] ===
+            ""
         ) {
 
             throw new Error(
@@ -361,44 +723,6 @@ function validatePackage(pkg) {
         }
     }
 
-
-    // --------------------------------------------------------
-    // VERIFICAR MODELO
-    // --------------------------------------------------------
-
-    const model =
-        documentModels[
-            pkg.document_type
-        ];
-
-
-    if (!model) {
-
-        throw new Error(
-            `Modelo não encontrado: ${pkg.document_type}`
-        );
-    }
-
-
-    // --------------------------------------------------------
-    // VERIFICAR CONSTRUTOR
-    // --------------------------------------------------------
-
-    if (
-        !documentFieldBuilders[
-            pkg.document_type
-        ]
-    ) {
-
-        throw new Error(
-            `Construtor de campos não encontrado: ${pkg.document_type}`
-        );
-    }
-
-
-    // --------------------------------------------------------
-    // VERIFICAR CONTENT_DATA
-    // --------------------------------------------------------
 
     if (
         typeof pkg.content_data !==
@@ -411,6 +735,30 @@ function validatePackage(pkg) {
     }
 
 
+    if (
+        !documentModels[
+            pkg.document_type
+        ]
+    ) {
+
+        throw new Error(
+            `Modelo não encontrado: ${pkg.document_type}`
+        );
+    }
+
+
+    if (
+        !documentFieldBuilders[
+            pkg.document_type
+        ]
+    ) {
+
+        throw new Error(
+            `Configuração do documento não encontrada: ${pkg.document_type}`
+        );
+    }
+
+
     return true;
 }
 
@@ -419,7 +767,9 @@ function validatePackage(pkg) {
 // LER JSON
 // ============================================================
 
-function parsePackage(rawText) {
+function parsePackage(
+    rawText
+) {
 
     if (
         !rawText ||
@@ -465,194 +815,163 @@ function parsePackage(rawText) {
 
 
 // ============================================================
-// TRADUÇÃO DOS CAMPOS
+// RENDERIZAR CONTEÚDO
 // ============================================================
 
-const fieldTranslations = {
-
-    nrea:
-        "NREA",
-
-    hired_at:
-        "Data de Contratação",
-
-    position:
-        "Cargo",
-
-    company_name:
-        "Empresa",
-
-    employee_name:
-        "Funcionário",
-
-    admission_date:
-        "Data de Admissão",
-
-    founders:
-        "Fundadores",
-
-    created_at:
-        "Data de Criação",
-
-    trade_name:
-        "Nome Fantasia",
-
-    business_name:
-        "Razão Social",
-
-    initial_capital:
-        "Capital Inicial",
-
-    economic_activity:
-        "Atividade Econômica",
-
-    situacao_cadastral:
-        "Situação Cadastral"
-};
-
-
-function translateFieldName(key) {
-
-    return (
-        fieldTranslations[key] ||
-        key
-    );
-}
-
-
-// ============================================================
-// FORMATAR VALORES DA INTERFACE
-// ============================================================
-
-function formatDisplayValue(value) {
+function renderContentData(
+    contentData
+) {
 
     if (
-        value === null ||
-        value === undefined
+        !contentData ||
+        typeof contentData !== "object"
     ) {
 
         return "";
     }
 
 
-    if (
-        typeof value === "object"
+    let html = "";
+
+
+    for (
+        const [
+            key,
+            value
+        ]
+        of Object.entries(
+            contentData
+        )
     ) {
 
-        return escapeHtml(
-            JSON.stringify(
+        // CPF nunca é exibido
+        if (
+            key.toLowerCase()
+                .includes("cpf")
+        ) {
+            continue;
+        }
+
+
+        const label =
+            fieldTranslations[key] ||
+            key;
+
+
+        let displayValue;
+
+
+        if (
+            Array.isArray(value)
+        ) {
+
+            displayValue =
                 value
-            )
-        );
-    }
-
-
-    return escapeHtml(
-        String(value)
-    ).replace(
-        /\n/g,
-        "<br>"
-    );
-}
-
-
-// ============================================================
-// MOSTRAR CONTENT_DATA
-// ============================================================
-
-function renderContentData(data) {
-
-    if (
-        !data ||
-        typeof data !== "object"
-    ) {
-
-        return "";
-    }
-
-
-    return Object.entries(data)
-        .map(([key, value]) => {
-
-            // CPF nunca é exibido
-            if (
-                key
-                    .toLowerCase()
-                    .includes("cpf")
-            ) {
-
-                return "";
-            }
-
-
-            let displayValue;
-
-
-            if (
-                Array.isArray(value)
-            ) {
-
-                displayValue =
-                    value
-                        .map(item => {
+                    .map(
+                        item => {
 
                             if (
                                 typeof item ===
-                                "object" &&
-                                item !== null
+                                "object"
                             ) {
 
                                 return Object.entries(
                                     item
                                 )
                                     .filter(
-                                        ([itemKey]) =>
+                                        (
+                                            [
+                                                itemKey
+                                            ]
+                                        ) =>
                                             !itemKey
                                                 .toLowerCase()
                                                 .includes("cpf")
                                     )
                                     .map(
-                                        ([itemKey, itemValue]) =>
-                                            `${translateFieldName(itemKey)}: ${formatDisplayValue(itemValue)}`
+                                        (
+                                            [
+                                                itemKey,
+                                                itemValue
+                                            ]
+                                        ) =>
+                                            `${itemKey}: ${itemValue}`
                                     )
-                                    .join(" | ");
+                                    .join(
+                                        ", "
+                                    );
                             }
 
 
-                            return formatDisplayValue(
+                            return String(
                                 item
                             );
-                        })
-                        .join("<br>");
-
-            } else {
-
-                displayValue =
-                    formatDisplayValue(
-                        value
+                        }
+                    )
+                    .join(
+                        "<br>"
                     );
-            }
+
+        } else if (
+            typeof value ===
+            "object" &&
+            value !== null
+        ) {
+
+            displayValue =
+                Object.entries(
+                    value
+                )
+                    .filter(
+                        (
+                            [
+                                itemKey
+                            ]
+                        ) =>
+                            !itemKey
+                                .toLowerCase()
+                                .includes("cpf")
+                    )
+                    .map(
+                        (
+                            [
+                                itemKey,
+                                itemValue
+                            ]
+                        ) =>
+                            `${itemKey}: ${itemValue}`
+                    )
+                    .join(
+                        "<br>"
+                    );
+
+        } else {
+
+            displayValue =
+                escapeHtml(
+                    value
+                );
+        }
 
 
-            return `
-                <div class="data-field">
+        html += `
 
-                    <strong>
-                        ${escapeHtml(
-                            translateFieldName(
-                                key
-                            )
-                        )}
-                    </strong>
+            <div class="field">
 
-                    <span>
-                        ${displayValue}
-                    </span>
+                <strong>
+                    ${escapeHtml(label)}
+                </strong>
 
+                <div>
+                    ${displayValue}
                 </div>
-            `;
-        })
-        .join("");
+
+            </div>
+        `;
+    }
+
+
+    return html;
 }
 
 
@@ -660,7 +979,9 @@ function renderContentData(data) {
 // MOSTRAR INFORMAÇÕES DO PACOTE
 // ============================================================
 
-function showPackageInfo(pkg) {
+function showPackageInfo(
+    pkg
+) {
 
     if (!resultElement) {
         return;
@@ -675,90 +996,65 @@ function showPackageInfo(pkg) {
 
     resultElement.innerHTML = `
 
-        <div class="document-info">
-
-            <h2>
-                ${escapeHtml(
-                    model.name
-                )}
-            </h2>
-
-
-            <div class="info-row">
-
-                <strong>
-                    PEA:
-                </strong>
-
-                <span>
-                    ${escapeHtml(
-                        pkg.protocol_number
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="info-row">
-
-                <strong>
-                    Serviço:
-                </strong>
-
-                <span>
-                    ${escapeHtml(
-                        pkg.service_type
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="info-row">
-
-                <strong>
-                    ID do documento:
-                </strong>
-
-                <span>
-                    ${escapeHtml(
-                        pkg.doc_id
-                    )}
-                </span>
-
-            </div>
-
-
-            <div class="info-row">
-
-                <strong>
-                    Tipo:
-                </strong>
-
-                <span>
-                    ${escapeHtml(
-                        pkg.document_type
-                    )}
-                </span>
-
-            </div>
-
-
-            <hr>
-
+        <div class="package-info">
 
             <h3>
-                Dados do documento
+                ${escapeHtml(model.name)}
             </h3>
 
 
-            <div class="content-data">
+            <div class="field">
 
-                ${renderContentData(
-                    pkg.content_data
-                )}
+                <strong>
+                    Documento
+                </strong>
+
+                <div>
+                    ${escapeHtml(
+                        pkg.document_type
+                    )}
+                </div>
 
             </div>
+
+
+            <div class="field">
+
+                <strong>
+                    PEA
+                </strong>
+
+                <div>
+                    ${escapeHtml(
+                        pkg.protocol_number
+                    )}
+                </div>
+
+            </div>
+
+
+            <div class="field">
+
+                <strong>
+                    Serviço
+                </strong>
+
+                <div>
+                    ${escapeHtml(
+                        pkg.service_type
+                    )}
+                </div>
+
+            </div>
+
+
+            <h4>
+                Dados do documento
+            </h4>
+
+            ${renderContentData(
+                pkg.content_data
+            )}
 
         </div>
     `;
@@ -766,12 +1062,12 @@ function showPackageInfo(pkg) {
 
 
 // ============================================================
-// DOWNLOAD
+// BAIXAR ARQUIVO
 // ============================================================
 
 function downloadBlob(
     blob,
-    filename
+    fileName
 ) {
 
     const url =
@@ -790,7 +1086,7 @@ function downloadBlob(
         url;
 
     link.download =
-        filename;
+        fileName;
 
 
     document.body.appendChild(
@@ -804,13 +1100,14 @@ function downloadBlob(
     link.remove();
 
 
-    setTimeout(() => {
-
-        URL.revokeObjectURL(
-            url
-        );
-
-    }, 1000);
+    setTimeout(
+        () => {
+            URL.revokeObjectURL(
+                url
+            );
+        },
+        1000
+    );
 }
 
 
@@ -818,11 +1115,9 @@ function downloadBlob(
 // VERIFICAR COM O REA
 // ============================================================
 
-async function verifyWithREA(pkg) {
-
-    // --------------------------------------------------------
-    // MODO LOCAL
-    // --------------------------------------------------------
+async function verifyWithREA(
+    pkg
+) {
 
     if (
         !API_URL ||
@@ -831,27 +1126,11 @@ async function verifyWithREA(pkg) {
         )
     ) {
 
-        console.warn(
-            "API do REA ainda não configurada."
+        throw new Error(
+            "A URL da API do REA ainda não foi configurada."
         );
-
-
-        return {
-
-            verified: false,
-
-            localOnly: true,
-
-            message:
-                "API do REA ainda não configurada."
-
-        };
     }
 
-
-    // --------------------------------------------------------
-    // MONTAR URL
-    // --------------------------------------------------------
 
     const url =
         new URL(
@@ -871,180 +1150,176 @@ async function verifyWithREA(pkg) {
     );
 
 
-    // --------------------------------------------------------
-    // CONSULTAR REA
-    // --------------------------------------------------------
+    const response =
+        await fetch(
+            url.toString(),
+            {
+                method:
+                    "GET",
 
-    let response;
+                headers: {
+                    Accept:
+                        "application/json"
+                }
+            }
+        );
+
+
+    let responseData;
 
 
     try {
 
-        response =
-            await fetch(
-                url.toString(),
-                {
-                    method: "GET",
+        responseData =
+            await response.json();
 
-                    headers: {
-                        Accept:
-                            "application/json"
-                    }
-                }
-            );
-
-    } catch (error) {
-
-        console.error(
-            "Erro ao consultar REA:",
-            error
-        );
+    } catch {
 
         throw new Error(
-            "Não foi possível consultar o REA."
+            "O REA retornou uma resposta inválida."
         );
     }
 
-
-    // --------------------------------------------------------
-    // VERIFICAR HTTP
-    // --------------------------------------------------------
 
     if (
         !response.ok
     ) {
 
-        let message =
-            `REA respondeu com HTTP ${response.status}.`;
+        throw new Error(
+            responseData.message ||
+            responseData.error ||
+            `Erro na API do REA: HTTP ${response.status}`
+        );
+    }
 
 
-        try {
+    if (
+        responseData.valid ===
+        false
+    ) {
 
-            const errorData =
-                await response.json();
+        throw new Error(
+            "O documento não foi validado pelo REA."
+        );
+    }
 
 
-            if (
-                errorData?.error
-            ) {
+    return responseData;
+}
 
-                message =
-                    errorData.error;
-            }
 
-        } catch {
-            // Mantém mensagem padrão.
+// ============================================================
+// COMPARAR PACOTE COM DADOS DO REA
+// ============================================================
+
+function comparePackageWithServer(
+    pkg,
+    serverData
+) {
+
+    if (!serverData) {
+        return false;
+    }
+
+
+    const checks = [
+
+        [
+            "doc_id",
+            pkg.doc_id,
+            serverData.doc_id
+        ],
+
+        [
+            "protocol_id",
+            pkg.protocol_id,
+            serverData.protocol_id
+        ],
+
+        [
+            "protocol_number",
+            pkg.protocol_number,
+            serverData.protocol_number
+        ],
+
+        [
+            "document_type",
+            pkg.document_type,
+            serverData.document_type
+        ],
+
+        [
+            "service_type",
+            pkg.service_type,
+            serverData.service_type
+        ]
+    ];
+
+
+    for (
+        const [
+            name,
+            localValue,
+            serverValue
+        ]
+        of checks
+    ) {
+
+        if (
+            String(localValue) !==
+            String(serverValue)
+        ) {
+
+            console.error(
+                `Divergência em ${name}:`,
+                {
+                    pacote:
+                        localValue,
+
+                    servidor:
+                        serverValue
+                }
+            );
+
+
+            return false;
         }
-
-
-        throw new Error(
-            message
-        );
     }
 
 
-    // --------------------------------------------------------
-    // JSON DO SERVIDOR
-    // --------------------------------------------------------
+    return true;
+}
 
-    const serverData =
-        await response.json();
+
+// ============================================================
+// CARREGAR MODELO DOCX
+// ============================================================
+
+async function loadTemplate(
+    filePath
+) {
+
+    const response =
+        await fetch(
+            filePath,
+            {
+                cache:
+                    "no-store"
+            }
+        );
 
 
     if (
-        serverData.valid !== true
+        !response.ok
     ) {
 
         throw new Error(
-            "O REA não validou este documento."
+            `Não foi possível carregar o modelo: ${filePath}`
         );
     }
 
 
-    // --------------------------------------------------------
-    // VALIDAR IDENTIDADE
-    // --------------------------------------------------------
-
-    if (
-        serverData.doc_id !==
-        pkg.doc_id
-    ) {
-
-        throw new Error(
-            "O ID do documento não corresponde ao REA."
-        );
-    }
-
-
-    if (
-        serverData.protocol_number !==
-        pkg.protocol_number
-    ) {
-
-        throw new Error(
-            "O número do protocolo não corresponde ao REA."
-        );
-    }
-
-
-    if (
-        serverData.document_type !==
-        pkg.document_type
-    ) {
-
-        throw new Error(
-            "O tipo do documento não corresponde ao REA."
-        );
-    }
-
-
-    // --------------------------------------------------------
-    // COMPARAR CONTENT_DATA
-    // --------------------------------------------------------
-
-    const localContent =
-        pkg.content_data;
-
-
-    const serverContent =
-        serverData.content_data;
-
-
-    if (
-        JSON.stringify(
-            localContent
-        ) !==
-        JSON.stringify(
-            serverContent
-        )
-    ) {
-
-        console.error(
-            "Dados do pacote:",
-            localContent
-        );
-
-        console.error(
-            "Dados do REA:",
-            serverContent
-        );
-
-
-        throw new Error(
-            "Os dados do pacote não correspondem aos dados atuais do REA."
-        );
-    }
-
-
-    return {
-
-        verified: true,
-
-        localOnly: false,
-
-        serverData
-
-    };
+    return await response.arrayBuffer();
 }
 
 
@@ -1052,11 +1327,29 @@ async function verifyWithREA(pkg) {
 // GERAR DOCX
 // ============================================================
 
-async function generateDocx(pkg) {
+async function generateDocx(
+    pkg
+) {
 
-    // --------------------------------------------------------
-    // MODELO
-    // --------------------------------------------------------
+    if (
+        !window.PizZip
+    ) {
+
+        throw new Error(
+            "PizZip não foi carregado."
+        );
+    }
+
+
+    if (
+        !window.docxtemplater
+    ) {
+
+        throw new Error(
+            "Docxtemplater não foi carregado."
+        );
+    }
+
 
     const model =
         documentModels[
@@ -1072,10 +1365,6 @@ async function generateDocx(pkg) {
     }
 
 
-    // --------------------------------------------------------
-    // CONSTRUTOR
-    // --------------------------------------------------------
-
     const buildFields =
         documentFieldBuilders[
             pkg.document_type
@@ -1085,103 +1374,34 @@ async function generateDocx(pkg) {
     if (!buildFields) {
 
         throw new Error(
-            `Configuração do documento não encontrada: ${pkg.document_type}`
+            `Construtor não encontrado: ${pkg.document_type}`
         );
     }
+
+
+    const fields =
+        buildFields(
+            pkg
+        );
 
 
     console.log(
-        "Tipo de documento:",
-        pkg.document_type
+        "Campos enviados ao modelo:",
+        fields
     );
-
-
-    console.log(
-        "Modelo:",
-        model.file
-    );
-
-
-    // --------------------------------------------------------
-    // BUSCAR DOCX
-    // --------------------------------------------------------
-
-    let response;
-
-
-    try {
-
-        response =
-            await fetch(
-                model.file
-            );
-
-    } catch (error) {
-
-        console.error(
-            "ERRO AO BUSCAR MODELO:",
-            error
-        );
-
-
-        throw new Error(
-            `Não foi possível acessar o modelo DOCX: ${model.file}`
-        );
-    }
-
-
-    if (
-        !response.ok
-    ) {
-
-        throw new Error(
-            `Modelo DOCX não encontrado. HTTP ${response.status}`
-        );
-    }
 
 
     const arrayBuffer =
-        await response.arrayBuffer();
-
-
-    console.log(
-        "Modelo carregado:",
-        arrayBuffer.byteLength,
-        "bytes"
-    );
-
-
-    // --------------------------------------------------------
-    // PIZZIP
-    // --------------------------------------------------------
-
-    let zip;
-
-
-    try {
-
-        zip =
-            new PizZip(
-                arrayBuffer
-            );
-
-    } catch (error) {
-
-        console.error(
-            "ERRO NO PIZZIP:",
-            error
+        await loadTemplate(
+            model.file
         );
 
 
-        throw new Error(
-            "O arquivo encontrado não é um DOCX válido."
+    const zip =
+        new window.PizZip(
+            arrayBuffer
         );
-    }
 
-
-    // --------------------------------------------------------
-    // DOCXTEMPLATER
-    // --------------------------------------------------------
 
     const doc =
         new window.docxtemplater(
@@ -1194,6 +1414,7 @@ async function generateDocx(pkg) {
                     true,
 
                 delimiters: {
+
                     start:
                         "[[",
 
@@ -1204,44 +1425,6 @@ async function generateDocx(pkg) {
         );
 
 
-    // --------------------------------------------------------
-    // CAMPOS
-    // --------------------------------------------------------
-
-    let fields;
-
-
-    try {
-
-        fields =
-            buildFields(
-                pkg
-            );
-
-    } catch (error) {
-
-        console.error(
-            "ERRO AO MONTAR CAMPOS:",
-            error
-        );
-
-
-        throw new Error(
-            "Não foi possível preparar os dados do documento."
-        );
-    }
-
-
-    console.log(
-        "Campos enviados para o modelo:",
-        fields
-    );
-
-
-    // --------------------------------------------------------
-    // RENDER
-    // --------------------------------------------------------
-
     try {
 
         doc.render(
@@ -1251,52 +1434,31 @@ async function generateDocx(pkg) {
     } catch (error) {
 
         console.error(
-            "ERRO AO PREENCHER DOCX:",
+            "Erro ao preencher DOCX:",
             error
         );
 
 
         throw new Error(
-            "Não foi possível preencher o modelo DOCX. " +
-            "Verifique os marcadores [[...]] no arquivo."
+            "Não foi possível preencher o modelo DOCX. Verifique se os placeholders [[...]] estão corretos."
         );
     }
 
 
-    // --------------------------------------------------------
-    // GERAR BLOB
-    // --------------------------------------------------------
+    const outputBlob =
+        doc.getZip()
+            .generate(
+                {
+                    type:
+                        "blob",
 
-    const blob =
-        doc
-            .getZip()
-            .generate({
-                type:
-                    "blob",
-
-                mimeType:
-                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            });
+                    mimeType:
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                }
+            );
 
 
-    console.log(
-        "Documento gerado:",
-        blob.size,
-        "bytes"
-    );
-
-
-    // --------------------------------------------------------
-    // DOWNLOAD
-    // --------------------------------------------------------
-
-    downloadBlob(
-        blob,
-        model.outputName
-    );
-
-
-    return blob;
+    return outputBlob;
 }
 
 
@@ -1304,7 +1466,9 @@ async function generateDocx(pkg) {
 // PROCESSAR PACOTE
 // ============================================================
 
-async function processPackage() {
+async function processPackage(
+    options = {}
+) {
 
     try {
 
@@ -1314,9 +1478,19 @@ async function processPackage() {
         );
 
 
+        // ----------------------------------------------------
+        // LER CAMPO
+        // ----------------------------------------------------
+
         const rawText =
             packageInput?.value ||
             "";
+
+
+        console.log(
+            "Texto recebido no campo:",
+            rawText
+        );
 
 
         const pkg =
@@ -1331,39 +1505,71 @@ async function processPackage() {
         );
 
 
+        // ----------------------------------------------------
+        // MOSTRAR INFORMAÇÕES
+        // ----------------------------------------------------
+
         showPackageInfo(
             pkg
         );
 
 
-        setStatus(
-            "Verificando documento...",
-            "loading"
-        );
-
-
-        const verification =
-            await verifyWithREA(
-                pkg
-            );
-
+        // ----------------------------------------------------
+        // VERIFICAÇÃO NO REA
+        // ----------------------------------------------------
 
         if (
-            verification.localOnly
+            options.verify !== false
         ) {
 
             setStatus(
-                "Pacote válido. API do REA ainda não configurada.",
-                "warning"
+                "Verificando documento no REA...",
+                "loading"
             );
 
-        } else {
 
-            setStatus(
-                "Documento validado pelo REA.",
-                "success"
+            const serverData =
+                await verifyWithREA(
+                    pkg
+                );
+
+
+            if (
+                !comparePackageWithServer(
+                    pkg,
+                    serverData
+                )
+            ) {
+
+                throw new Error(
+                    "Os dados do pacote não coincidem com os dados do REA."
+                );
+            }
+
+
+            // ------------------------------------------------
+            // SUBSTITUIR CONTENT_DATA PELO SERVIDOR
+            // ------------------------------------------------
+
+            if (
+                serverData.content_data
+            ) {
+
+                pkg.content_data =
+                    serverData.content_data;
+            }
+
+
+            console.log(
+                "Documento validado pelo REA."
             );
         }
+
+
+        setStatus(
+            "Documento validado e pronto para geração.",
+            "success"
+        );
 
 
         return pkg;
@@ -1389,52 +1595,114 @@ async function processPackage() {
 
 
 // ============================================================
+// GERAR DOCUMENTO ATUAL
+// ============================================================
+
+async function generateCurrentDocument() {
+
+    try {
+
+        const pkg =
+            await processPackage();
+
+
+        setStatus(
+            "Gerando documento...",
+            "loading"
+        );
+
+
+        const blob =
+            await generateDocx(
+                pkg
+            );
+
+
+        const fileName =
+            getOutputFileName(
+                pkg
+            );
+
+
+        downloadBlob(
+            blob,
+            fileName
+        );
+
+
+        setStatus(
+            `Documento gerado: ${fileName}`,
+            "success"
+        );
+
+
+        console.log(
+            "Documento gerado:",
+            fileName
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao gerar documento:",
+            error
+        );
+
+
+        setStatus(
+            error.message ||
+            "Erro ao gerar documento.",
+            "error"
+        );
+    }
+}
+
+
+// ============================================================
+// VERIFICAR DOCUMENTO
+// ============================================================
+
+async function verifyCurrentDocument() {
+
+    try {
+
+        const pkg =
+            await processPackage();
+
+
+        setStatus(
+            "Documento verificado com sucesso.",
+            "success"
+        );
+
+
+        showPackageInfo(
+            pkg
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Erro na verificação:",
+            error
+        );
+    }
+}
+
+
+// ============================================================
 // BOTÃO GERAR
 // ============================================================
 
-if (generateButton) {
+if (
+    generateButton
+) {
 
     generateButton.addEventListener(
         "click",
-        async () => {
-
-            try {
-
-                const pkg =
-                    await processPackage();
-
-
-                setStatus(
-                    "Gerando documento...",
-                    "loading"
-                );
-
-
-                await generateDocx(
-                    pkg
-                );
-
-
-                setStatus(
-                    "Documento gerado com sucesso!",
-                    "success"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Erro ao gerar documento:",
-                    error
-                );
-
-
-                setStatus(
-                    error.message ||
-                    "Não foi possível gerar o documento.",
-                    "error"
-                );
-            }
-        }
+        generateCurrentDocument
     );
 }
 
@@ -1443,18 +1711,38 @@ if (generateButton) {
 // BOTÃO VERIFICAR
 // ============================================================
 
-if (verifyButton) {
+if (
+    verifyButton
+) {
 
     verifyButton.addEventListener(
         "click",
-        async () => {
+        verifyCurrentDocument
+    );
+}
 
-            try {
 
-                await processPackage();
+// ============================================================
+// ENTER / CTRL + ENTER
+// ============================================================
 
-            } catch {
-                // O erro já foi exibido.
+if (
+    packageInput
+) {
+
+    packageInput.addEventListener(
+        "keydown",
+        event => {
+
+            if (
+                event.ctrlKey &&
+                event.key ===
+                "Enter"
+            ) {
+
+                event.preventDefault();
+
+                generateCurrentDocument();
             }
         }
     );
@@ -1462,35 +1750,13 @@ if (verifyButton) {
 
 
 // ============================================================
-// API GLOBAL
+// DIAGNÓSTICO
 // ============================================================
-
-window.REAGenerator = {
-
-    parsePackage,
-
-    validatePackage,
-
-    verifyWithREA,
-
-    generateDocx,
-
-    processPackage,
-
-    buildCompanyData,
-
-    buildAdmissionData,
-
-    documentModels,
-
-    documentFieldBuilders
-
-};
-
 
 console.log(
     "Gerador de Documentos REA carregado."
 );
+
 
 console.log(
     "Modelos disponíveis:",
@@ -1498,3 +1764,33 @@ console.log(
         documentModels
     )
 );
+
+
+console.log(
+    "Construtores disponíveis:",
+    Object.keys(
+        documentFieldBuilders
+    )
+);
+
+
+// ============================================================
+// API PÚBLICA
+// ============================================================
+
+window.REAGenerator = {
+
+    documentModels,
+
+    documentFieldBuilders,
+
+    parsePackage,
+
+    validatePackage,
+
+    generateDocx,
+
+    processPackage,
+
+    getOutputFileName
+};

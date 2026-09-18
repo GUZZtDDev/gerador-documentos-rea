@@ -32,7 +32,7 @@ const documentModels = {
 // ============================================================
 
 const packageInput =
-    document.getElementById("packageInput");
+    document.getElementById("jsonInput");
 
 const generateButton =
     document.getElementById("generateButton");

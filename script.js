@@ -7,9 +7,6 @@
 // CONFIGURAÇÃO
 // ============================================================
 
-// URL da API do REA.
-// Substitua pela URL real da sua Edge Function quando estiver
-// configurando a comunicação definitiva.
 const API_URL =
     "https://mmxbckoewggaxyupieup.supabase.co/functions/v1/get-document-data";
 
@@ -56,6 +53,32 @@ const documentModels = {
 
         outputName:
             "documento-desligamento-funcionario.docx"
+    },
+
+
+    documento_admissao_socio: {
+
+        file:
+            "modelos/admissao-socio.docx",
+
+        name:
+            "Admissão de Sócio",
+
+        outputName:
+            "documento-admissao-socio.docx"
+    },
+
+
+    documento_desligamento_socio: {
+
+        file:
+            "modelos/desligamento-socio.docx",
+
+        name:
+            "Desligamento de Sócio",
+
+        outputName:
+            "documento-desligamento-socio.docx"
     }
 };
 
@@ -211,25 +234,6 @@ function formatCurrency(value) {
 
 
 // ============================================================
-// CAPITALIZAÇÃO
-// ============================================================
-
-function capitalize(value) {
-
-    if (!value) {
-        return "";
-    }
-
-    return String(value)
-        .charAt(0)
-        .toUpperCase()
-        +
-        String(value)
-            .slice(1);
-}
-
-
-// ============================================================
 // LIMPAR NOME DE ARQUIVO
 // ============================================================
 
@@ -241,17 +245,22 @@ function sanitizeFileName(value) {
 
     return String(value)
 
-        // caracteres proibidos
-        .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+        .replace(
+            /[<>:"/\\|?*\x00-\x1F]/g,
+            ""
+        )
 
-        // espaços repetidos
-        .replace(/\s+/g, " ")
+        .replace(
+            /\s+/g,
+            " "
+        )
 
-        // remove espaços no começo/fim
         .trim()
 
-        // evita ponto/espaço no final
-        .replace(/[. ]+$/, "");
+        .replace(
+            /[. ]+$/,
+            ""
+        );
 }
 
 
@@ -314,13 +323,60 @@ function getOutputFileName(
         }
 
 
-        default: {
+        case "documento_admissao_socio": {
+
+            const partnerName =
+                data.new_partner_name ||
+                data.socio_novo ||
+                data.partner_name ||
+                "Sócio";
+
+            return sanitizeFileName(
+                `Admissão de Sócio - ${partnerName} - ${pea}.docx`
+            );
+        }
+
+
+        case "documento_desligamento_socio": {
+
+            const partnerName =
+                data.partner_name ||
+                data.socio_desligado ||
+                data.removed_partner_name ||
+                "Sócio";
+
+            return sanitizeFileName(
+                `Desligamento de Sócio - ${partnerName} - ${pea}.docx`
+            );
+        }
+
+
+        default:
 
             return sanitizeFileName(
                 `Documento REA - ${pea}.docx`
             );
-        }
     }
+}
+
+
+// ============================================================
+// URL DE VERIFICAÇÃO
+// ============================================================
+
+function getVerificationUrl(pkg) {
+
+    const data =
+        pkg.content_data ||
+        {};
+
+    return (
+        pkg.verification_url ||
+        pkg.verificationUrl ||
+        data.verification_url ||
+        data.verificationUrl ||
+        ""
+    );
 }
 
 
@@ -338,9 +394,7 @@ function buildCompanyData(
 
 
     const founders =
-        Array.isArray(
-            data.founders
-        )
+        Array.isArray(data.founders)
             ? data.founders
             : [];
 
@@ -349,9 +403,11 @@ function buildCompanyData(
         founders
             .map(
                 founder =>
-                    founder.full_name ||
-                    founder.name ||
-                    ""
+                    (
+                        founder.full_name ||
+                        founder.name ||
+                        ""
+                    ).trim()
             )
             .filter(Boolean);
 
@@ -361,19 +417,42 @@ function buildCompanyData(
             .map(
                 founder => {
 
-                    if (
-                        founder.ownership_percentage ===
-                        null ||
-                        founder.ownership_percentage ===
-                        undefined
-                    ) {
+                    const name =
+                        (
+                            founder.full_name ||
+                            founder.name ||
+                            ""
+                        ).trim();
+
+                    const percentage =
+                        founder.ownership_percentage;
+
+
+                    if (!name) {
                         return "";
                     }
 
-                    return `${founder.full_name || ""} - ${founder.ownership_percentage}%`;
+
+                    if (
+                        percentage !== null &&
+                        percentage !== undefined &&
+                        percentage !== ""
+                    ) {
+
+                        return `${name} - ${percentage}%`;
+                    }
+
+
+                    return name;
                 }
             )
             .filter(Boolean);
+
+
+    const participationText =
+        founderOwnership.join(
+            "; "
+        );
 
 
     return {
@@ -382,85 +461,74 @@ function buildCompanyData(
             pkg.protocol_number ||
             "",
 
-
         SERVICO:
             pkg.service_type ||
             "",
 
-
         FUNCIONARIO:
             "",
-
 
         DATA:
             formatDate(
                 data.created_at
             ),
 
-
         NREA:
             data.nrea ||
             "",
-
 
         NOME_EMPRESA:
             data.business_name ||
             "",
 
-
         EMPRESA:
             data.business_name ||
             "",
-
 
         NOME_FANTASIA:
             data.trade_name ||
             "",
 
-
         ATIVIDADE_ECONOMICA:
             data.economic_activity ||
             "",
-
 
         DATA_CRIACAO:
             formatDate(
                 data.created_at
             ),
 
-
         FUNDADORES:
             founderNames.join(
                 ", "
             ),
-
 
         SOCIOS:
             founderNames.join(
                 ", "
             ),
 
-
         PARTICIPACAO_SOCIETARIA:
-            founderOwnership.join(
-                "; "
-            ),
+            participationText,
 
+        ALTERACAO_SOCIETARIA:
+            participationText,
 
         CAPITAL_INICIAL:
             formatCurrency(
                 data.initial_capital
             ),
 
-
         SITUACAO:
             data.situacao_cadastral ||
             "",
 
-
         SITUACAO_CADASTRAL:
             data.situacao_cadastral ||
-            ""
+            "",
+
+        VERIFICACAO_URL:
+            getVerificationUrl(pkg)
     };
 }
 
@@ -484,15 +552,13 @@ function buildAdmissionData(
             pkg.protocol_number ||
             "",
 
-
         SERVICO:
             pkg.service_type ||
             "",
 
-
         FUNCIONARIO:
+            data.employee_name ||
             "",
-
 
         DATA:
             formatDate(
@@ -500,31 +566,30 @@ function buildAdmissionData(
                 data.hired_at
             ),
 
-
         NREA:
             data.nrea ||
             "",
-
 
         EMPRESA:
             data.company_name ||
             "",
 
+        FUNCIONARIO_EMPRESA:
+            data.employee_name ||
+            "",
 
-        // O modelo oficial possui
-        // [[CARGO]] neste campo.
-        // Conforme definido no projeto,
-        // ele recebe data.position.
         CARGO:
             data.position ||
             "",
-
 
         DATA_ADMISSAO:
             formatDate(
                 data.admission_date ||
                 data.hired_at
-            )
+            ),
+
+        VERIFICACAO_URL:
+            getVerificationUrl(pkg)
     };
 }
 
@@ -548,15 +613,12 @@ function buildTerminationData(
             pkg.protocol_number ||
             "",
 
-
         SERVICO:
             pkg.service_type ||
             "",
 
-
         FUNCIONARIO:
             "",
-
 
         DATA:
             formatDate(
@@ -567,20 +629,186 @@ function buildTerminationData(
                 data.dismissed_at
             ),
 
-
         NREA:
             data.nrea ||
             "",
-
 
         EMPRESA:
             data.company_name ||
             "",
 
-
         FUNCIONARIO_AFETADO:
             data.employee_name ||
-            ""
+            "",
+
+        DATA_ADMISSAO:
+            formatDate(
+                data.admission_date ||
+                data.hired_at
+            ),
+
+        CARGO:
+            data.position ||
+            "",
+
+        VERIFICACAO_URL:
+            getVerificationUrl(pkg)
+    };
+}
+
+
+// ============================================================
+// ADMISSÃO DE SÓCIO
+// ============================================================
+
+function buildPartnerAdmissionData(
+    pkg
+) {
+
+    const data =
+        pkg.content_data ||
+        {};
+
+
+    return {
+
+        PEA_DO_ATO:
+            pkg.protocol_number ||
+            "",
+
+        SERVICO:
+            pkg.service_type ||
+            "",
+
+        FUNCIONARIO:
+            data.employee_name ||
+            data.responsible_name ||
+            data.funcionario ||
+            "",
+
+        DATA:
+            formatDate(
+                data.created_at ||
+                data.admission_date ||
+                data.date
+            ),
+
+        NREA:
+            data.nrea ||
+            "",
+
+        EMPRESA:
+            data.company_name ||
+            data.business_name ||
+            "",
+
+        SOCIO_NOVO:
+            data.new_partner_name ||
+            data.socio_novo ||
+            data.partner_name ||
+            "",
+
+        PARTICIPACAO_SOCIO:
+            data.new_partner_ownership ??
+            data.ownership_percentage ??
+            data.partner_ownership ??
+            "",
+
+        MOTIVO:
+            data.reason ||
+            data.motivo ||
+            "",
+
+        SOCIOS_ATUAIS:
+            data.current_partners ||
+            data.socios_atuais ||
+            "",
+
+        NOVA_DISTRIBUICAO:
+            data.new_ownership_distribution ||
+            data.nova_distribuicao_societaria ||
+            "",
+
+        VERIFICACAO_URL:
+            getVerificationUrl(pkg)
+    };
+}
+
+
+// ============================================================
+// DESLIGAMENTO DE SÓCIO
+// ============================================================
+
+function buildPartnerTerminationData(
+    pkg
+) {
+
+    const data =
+        pkg.content_data ||
+        {};
+
+
+    return {
+
+        PEA_DO_ATO:
+            pkg.protocol_number ||
+            "",
+
+        SERVICO:
+            pkg.service_type ||
+            "",
+
+        FUNCIONARIO:
+            data.employee_name ||
+            data.responsible_name ||
+            data.funcionario ||
+            "",
+
+        DATA:
+            formatDate(
+                data.created_at ||
+                data.termination_date ||
+                data.date
+            ),
+
+        NREA:
+            data.nrea ||
+            "",
+
+        EMPRESA:
+            data.company_name ||
+            data.business_name ||
+            "",
+
+        SOCIO_DESLIGADO:
+            data.partner_name ||
+            data.socio_desligado ||
+            data.removed_partner_name ||
+            "",
+
+        PARTICIPACAO_SOCIO_ANTERIOR:
+            data.previous_partner_ownership ??
+            data.previous_ownership_percentage ??
+            data.partner_ownership ??
+            "",
+
+        MOTIVO:
+            data.reason ||
+            data.motivo ||
+            "",
+
+        SOCIOS_REMANESCENTES:
+            data.remaining_partners ||
+            data.socios_remanescentes ||
+            "",
+
+        NOVA_DISTRIBUICAO:
+            data.new_ownership_distribution ||
+            data.nova_distribuicao_societaria ||
+            "",
+
+        VERIFICACAO_URL:
+            getVerificationUrl(pkg)
     };
 }
 
@@ -594,13 +822,17 @@ const documentFieldBuilders = {
     documento_criacao_empresa:
         buildCompanyData,
 
-
     documento_admissao_funcionario:
         buildAdmissionData,
 
-
     documento_desligamento_funcionario:
-        buildTerminationData
+        buildTerminationData,
+
+    documento_admissao_socio:
+        buildPartnerAdmissionData,
+
+    documento_desligamento_socio:
+        buildPartnerTerminationData
 };
 
 
@@ -686,19 +918,12 @@ function validatePackage(
 
 
     const requiredFields = [
-
         "doc_id",
-
         "protocol_id",
-
         "document_type",
-
         "protocol_number",
-
         "service_type",
-
         "content_data",
-
         "checksum"
     ];
 
@@ -709,12 +934,9 @@ function validatePackage(
     ) {
 
         if (
-            pkg[field] ===
-            undefined ||
-            pkg[field] ===
-            null ||
-            pkg[field] ===
-            ""
+            pkg[field] === undefined ||
+            pkg[field] === null ||
+            pkg[field] === ""
         ) {
 
             throw new Error(
@@ -844,7 +1066,6 @@ function renderContentData(
         )
     ) {
 
-        // CPF nunca é exibido
         if (
             key.toLowerCase()
                 .includes("cpf")
@@ -913,8 +1134,7 @@ function renderContentData(
                     );
 
         } else if (
-            typeof value ===
-            "object" &&
+            typeof value === "object" &&
             value !== null
         ) {
 
@@ -976,7 +1196,7 @@ function renderContentData(
 
 
 // ============================================================
-// MOSTRAR INFORMAÇÕES DO PACOTE
+// MOSTRAR INFORMAÇÕES
 // ============================================================
 
 function showPackageInfo(
@@ -1052,6 +1272,7 @@ function showPackageInfo(
                 Dados do documento
             </h4>
 
+
             ${renderContentData(
                 pkg.content_data
             )}
@@ -1102,9 +1323,11 @@ function downloadBlob(
 
     setTimeout(
         () => {
+
             URL.revokeObjectURL(
                 url
             );
+
         },
         1000
     );
@@ -1194,8 +1417,7 @@ async function verifyWithREA(
 
 
     if (
-        responseData.valid ===
-        false
+        responseData.valid === false
     ) {
 
         throw new Error(
@@ -1209,7 +1431,7 @@ async function verifyWithREA(
 
 
 // ============================================================
-// COMPARAR PACOTE COM DADOS DO REA
+// COMPARAR PACOTE COM REA
 // ============================================================
 
 function comparePackageWithServer(
@@ -1478,19 +1700,9 @@ async function processPackage(
         );
 
 
-        // ----------------------------------------------------
-        // LER CAMPO
-        // ----------------------------------------------------
-
         const rawText =
             packageInput?.value ||
             "";
-
-
-        console.log(
-            "Texto recebido no campo:",
-            rawText
-        );
 
 
         const pkg =
@@ -1505,18 +1717,10 @@ async function processPackage(
         );
 
 
-        // ----------------------------------------------------
-        // MOSTRAR INFORMAÇÕES
-        // ----------------------------------------------------
-
         showPackageInfo(
             pkg
         );
 
-
-        // ----------------------------------------------------
-        // VERIFICAÇÃO NO REA
-        // ----------------------------------------------------
 
         if (
             options.verify !== false
@@ -1547,16 +1751,30 @@ async function processPackage(
             }
 
 
-            // ------------------------------------------------
-            // SUBSTITUIR CONTENT_DATA PELO SERVIDOR
-            // ------------------------------------------------
-
+            // Dados oficiais do REA
             if (
                 serverData.content_data
             ) {
 
                 pkg.content_data =
                     serverData.content_data;
+            }
+
+
+            // URL de verificação
+            if (
+                serverData.verification_url
+            ) {
+
+                pkg.verification_url =
+                    serverData.verification_url;
+
+            } else if (
+                serverData.verificationUrl
+            ) {
+
+                pkg.verification_url =
+                    serverData.verificationUrl;
             }
 
 
@@ -1723,7 +1941,7 @@ if (
 
 
 // ============================================================
-// ENTER / CTRL + ENTER
+// CTRL + ENTER
 // ============================================================
 
 if (
@@ -1736,8 +1954,7 @@ if (
 
             if (
                 event.ctrlKey &&
-                event.key ===
-                "Enter"
+                event.key === "Enter"
             ) {
 
                 event.preventDefault();

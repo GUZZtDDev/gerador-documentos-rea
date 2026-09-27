@@ -392,12 +392,10 @@ function buildCompanyData(
         pkg.content_data ||
         {};
 
-
     const founders =
         Array.isArray(data.founders)
             ? data.founders
             : [];
-
 
     const founderNames =
         founders
@@ -410,7 +408,6 @@ function buildCompanyData(
                     ).trim()
             )
             .filter(Boolean);
-
 
     const founderOwnership =
         founders
@@ -427,11 +424,9 @@ function buildCompanyData(
                     const percentage =
                         founder.ownership_percentage;
 
-
                     if (!name) {
                         return "";
                     }
-
 
                     if (
                         percentage !== null &&
@@ -442,18 +437,15 @@ function buildCompanyData(
                         return `${name} - ${percentage}%`;
                     }
 
-
                     return name;
                 }
             )
             .filter(Boolean);
 
-
     const participationText =
         founderOwnership.join(
             "; "
         );
-
 
     return {
 
@@ -511,6 +503,10 @@ function buildCompanyData(
         PARTICIPACAO_SOCIETARIA:
             participationText,
 
+        // CORREÇÃO:
+        PARTICIPACAO:
+            participationText,
+
         ALTERACAO_SOCIETARIA:
             participationText,
 
@@ -545,7 +541,6 @@ function buildAdmissionData(
         pkg.content_data ||
         {};
 
-
     return {
 
         PEA_DO_ATO:
@@ -556,8 +551,10 @@ function buildAdmissionData(
             pkg.service_type ||
             "",
 
+        // CORREÇÃO:
+        // O campo "Funcionário" do topo não deve
+        // receber o funcionário contratado.
         FUNCIONARIO:
-            data.employee_name ||
             "",
 
         DATA:
@@ -574,6 +571,7 @@ function buildAdmissionData(
             data.company_name ||
             "",
 
+        // O nome do contratado fica aqui:
         FUNCIONARIO_EMPRESA:
             data.employee_name ||
             "",

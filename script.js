@@ -1541,115 +1541,481 @@ async function loadTemplate(
 
     return await response.arrayBuffer();
 }
+// ============================================================
+// QR CODE
+// ============================================================
 
+function dataUrlToUint8Array(dataUrl) {
+    const base64 = dataUrl.split(",")[1];
+
+    const binary = atob(base64);
+
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+
+    return bytes;
+}
+
+
+async function generateVerificationQrCode(pkg) {
+
+    if (!window.QRCode) {
+        throw new Error(
+            "QRCode não foi carregado."
+        );
+    }
+
+    const verificationUrl =
+        pkg?.verification_url ||
+        pkg?.verificationUrl ||
+        pkg?.content_data?.verification_url ||
+        pkg?.content_data?.verificationUrl ||
+        "";
+
+    if (!verificationUrl) {
+        throw new Error(
+            "URL de verificação não encontrada."
+        );
+    }
+
+    let finalUrl = verificationUrl;
+
+    if (finalUrl.startsWith("/")) {
+
+        finalUrl =
+            "https://abn-administrative-w-gmly.bolt.host" +
+            finalUrl;
+    }
+
+    return await window.QRCode.toDataURL(
+        finalUrl,
+        {
+            errorCorrectionLevel: "M",
+            margin: 1,
+            width: 320
+        }
+    );
+}
+
+
+function insertQrImageIntoDocx(zip, qrDataUrl) {
+
+    const documentFile =
+        zip.file("word/document.xml");
+
+    const relsFile =
+        zip.file("word/_rels/document.xml.rels");
+
+    if (!documentFile || !relsFile) {
+        throw new Error(
+            "Estrutura DOCX inválida."
+        );
+    }
+
+    let documentXml =
+        documentFile.asText();
+
+    let relsXml =
+        relsFile.asText();
+
+
+    // ========================================================
+    // CONVERTER QR CODE PARA PNG
+    // ========================================================
+
+    const base64 =
+        qrDataUrl.split(",")[1];
+
+    if (!base64) {
+        throw new Error(
+            "QR Code inválido."
+        );
+    }
+
+    const binary =
+        atob(base64);
+
+    const imageBytes =
+        new Uint8Array(
+            binary.length
+        );
+
+    for (
+        let i = 0;
+        i < binary.length;
+        i++
+    ) {
+        imageBytes[i] =
+            binary.charCodeAt(i);
+    }
+
+
+    // ========================================================
+    // ADICIONAR IMAGEM AO DOCX
+    // ========================================================
+
+    zip.file(
+        "word/media/qr-code.png",
+        imageBytes
+    );
+
+
+    // ========================================================
+    // ENCONTRAR PRÓXIMO rId
+    // ========================================================
+
+    const existingIds = [
+        ...relsXml.matchAll(
+            /Id="rId(\d+)"/g
+        )
+    ].map(
+        match => Number(match[1])
+    );
+
+    const nextId =
+        existingIds.length > 0
+            ? Math.max(...existingIds) + 1
+            : 1;
+
+    const relationshipId =
+        `rId${nextId}`;
+
+
+    // ========================================================
+    // ADICIONAR RELATIONSHIP DA IMAGEM
+    // ========================================================
+
+    const relationship =
+        `<Relationship ` +
+        `Id="${relationshipId}" ` +
+        `Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" ` +
+        `Target="media/qr-code.png"/>`;
+
+    relsXml =
+        relsXml.replace(
+            "</Relationships>",
+            `${relationship}</Relationships>`
+        );
+
+    zip.file(
+        "word/_rels/document.xml.rels",
+        relsXml
+    );
+
+
+    // ========================================================
+    // CONTENT TYPES
+    // ========================================================
+
+    const contentTypesFile =
+        zip.file(
+            "[Content_Types].xml"
+        );
+
+    if (contentTypesFile) {
+
+        let contentTypesXml =
+            contentTypesFile.asText();
+
+        if (
+            !contentTypesXml.includes(
+                'Extension="png"'
+            )
+        ) {
+
+            contentTypesXml =
+                contentTypesXml.replace(
+                    "</Types>",
+                    `<Default Extension="png" ContentType="image/png"/></Types>`
+                );
+
+            zip.file(
+                "[Content_Types].xml",
+                contentTypesXml
+            );
+        }
+    }
+
+
+    // ========================================================
+    // TAMANHO DO QR CODE
+    // ========================================================
+
+    const width =
+        1143000;
+
+    const height =
+        1143000;
+
+
+    // ========================================================
+    // XML DA IMAGEM
+    //
+    // Namespaces declarados explicitamente para
+    // evitar erro do LibreOffice.
+    // ========================================================
+
+    const drawing = `
+<w:drawing
+    xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+    xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+    xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"
+    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+
+    <wp:inline
+        distT="0"
+        distB="0"
+        distL="0"
+        distR="0">
+
+        <wp:extent
+            cx="${width}"
+            cy="${height}"/>
+
+        <wp:docPr
+            id="${nextId}"
+            name="QR Code"/>
+
+        <wp:cNvGraphicFramePr>
+
+            <a:graphicFrameLocks
+                noChangeAspect="1"/>
+
+        </wp:cNvGraphicFramePr>
+
+        <a:graphic>
+
+            <a:graphicData
+                uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+
+                <pic:pic>
+
+                    <pic:nvPicPr>
+
+                        <pic:cNvPr
+                            id="${nextId}"
+                            name="QR Code"/>
+
+                        <pic:cNvPicPr/>
+
+                    </pic:nvPicPr>
+
+                    <pic:blipFill>
+
+                        <a:blip
+                            r:embed="${relationshipId}"/>
+
+                        <a:stretch>
+
+                            <a:fillRect/>
+
+                        </a:stretch>
+
+                    </pic:blipFill>
+
+                    <pic:spPr>
+
+                        <a:xfrm>
+
+                            <a:off
+                                x="0"
+                                y="0"/>
+
+                            <a:ext
+                                cx="${width}"
+                                cy="${height}"/>
+
+                        </a:xfrm>
+
+                        <a:prstGeom
+                            prst="rect">
+
+                            <a:avLst/>
+
+                        </a:prstGeom>
+
+                    </pic:spPr>
+
+                </pic:pic>
+
+            </a:graphicData>
+
+        </a:graphic>
+
+    </wp:inline>
+
+</w:drawing>
+`;
+
+
+    // ========================================================
+    // LOCALIZAR O PLACEHOLDER
+    //
+    // IMPORTANTE:
+    // Substituímos SOMENTE o <w:t> do QR.
+    // Não mexemos no restante do documento.
+    // ========================================================
+
+    const qrPlaceholder =
+        "<w:t>[[QR_CODE]]</w:t>";
+
+    if (
+        !documentXml.includes(
+            qrPlaceholder
+        )
+    ) {
+
+        throw new Error(
+            "Placeholder [[QR_CODE]] não encontrado no DOCX."
+        );
+    }
+
+
+    // ========================================================
+    // SUBSTITUIR SOMENTE [[QR_CODE]]
+    // ========================================================
+
+    documentXml =
+        documentXml.replace(
+            qrPlaceholder,
+            drawing
+        );
+
+
+    // ========================================================
+    // SALVAR DOCUMENT.XML
+    // ========================================================
+
+    zip.file(
+        "word/document.xml",
+        documentXml
+    );
+}
 
 // ============================================================
 // GERAR DOCX
 // ============================================================
 
-async function generateDocx(
-    pkg
-) {
+async function generateDocx(pkg) {
 
-    if (
-        !window.PizZip
-    ) {
-
+    if (!window.PizZip) {
         throw new Error(
             "PizZip não foi carregado."
         );
     }
 
-
-    if (
-        !window.docxtemplater
-    ) {
-
+    if (!window.docxtemplater) {
         throw new Error(
             "Docxtemplater não foi carregado."
         );
     }
 
-
     const model =
-        documentModels[
-            pkg.document_type
-        ];
-
+        documentModels[pkg.document_type];
 
     if (!model) {
-
         throw new Error(
             `Modelo não encontrado: ${pkg.document_type}`
         );
     }
 
-
     const buildFields =
-        documentFieldBuilders[
-            pkg.document_type
-        ];
-
+        documentFieldBuilders[pkg.document_type];
 
     if (!buildFields) {
-
         throw new Error(
             `Construtor não encontrado: ${pkg.document_type}`
         );
     }
 
-
     const fields =
-        buildFields(
-            pkg
-        );
-
+        buildFields(pkg);
 
     console.log(
         "Campos enviados ao modelo:",
         fields
     );
 
-
     const arrayBuffer =
-        await loadTemplate(
-            model.file
-        );
-
+        await loadTemplate(model.file);
 
     const zip =
-        new window.PizZip(
-            arrayBuffer
-        );
+        new window.PizZip(arrayBuffer);
 
+
+    // ============================================
+    // VERIFICAR QR CODE
+    // ============================================
+
+    const documentXml =
+        Object.keys(zip.files)
+            .filter(
+                filename =>
+                    filename.startsWith("word/") &&
+                    filename.endsWith(".xml")
+            )
+            .map(
+                filename =>
+                    zip.file(filename)?.asText() || ""
+            )
+            .join("\n");
+
+    const hasQrCode =
+        documentXml.includes("[[QR_CODE]]");
+
+    let modules = [];
+
+
+    // ============================================
+    // PREPARAR QR CODE
+    // ============================================
+
+    if (hasQrCode) {
+
+        if (!window.QRCode) {
+            throw new Error(
+                "QRCode não foi carregado."
+            );
+        }
+
+        const qrDataUrl =
+            await generateVerificationQrCode(pkg);
+
+        insertQrImageIntoDocx(
+            zip,
+            qrDataUrl
+        );
+    }
+
+
+    // ============================================
+    // DOCXTEMPLATER
+    // ============================================
 
     const doc =
         new window.docxtemplater(
             zip,
             {
-                paragraphLoop:
-                    true,
-
-                linebreaks:
-                    true,
-
                 delimiters: {
+                    start: "[[",
+                    end: "]]"
+                },
 
-                    start:
-                        "[[",
+                paragraphLoop: true,
 
-                    end:
-                        "]]"
-                }
+                linebreaks: true,
+
+                modules: modules
             }
         );
 
 
     try {
 
-        doc.render(
-            fields
-        );
+        doc.render(fields);
 
     } catch (error) {
 
@@ -1658,29 +2024,26 @@ async function generateDocx(
             error
         );
 
-
         throw new Error(
             "Não foi possível preencher o modelo DOCX. Verifique se os placeholders [[...]] estão corretos."
         );
     }
 
 
+    // ============================================
+    // GERAR ARQUIVO
+    // ============================================
     const outputBlob =
         doc.getZip()
-            .generate(
-                {
-                    type:
-                        "blob",
+            .generate({
+                type: "blob",
 
-                    mimeType:
-                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                }
-            );
-
+                mimeType:
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            });
 
     return outputBlob;
 }
-
 
 // ============================================================
 // PROCESSAR PACOTE
